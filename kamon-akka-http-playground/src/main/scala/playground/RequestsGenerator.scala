@@ -17,18 +17,18 @@
 package playground
 
 import akka.NotUsed
-import akka.actor.{ ActorSystem, Cancellable }
+import akka.actor.{ActorSystem, Cancellable}
 import akka.event.Logging
 import akka.http.scaladsl._
 import akka.http.scaladsl.model._
 import akka.stream.scaladsl._
-import akka.stream.{ ActorAttributes, ActorMaterializer, Materializer, Supervision }
+import akka.stream.{ActorAttributes, ActorMaterializer, Materializer, Supervision}
 
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 import scala.util.Random
 
-object RequestsGenerator {
+object RequestsGenerator extends App {
 
   implicit val system = ActorSystem()
   implicit val executor = system.dispatcher
@@ -36,30 +36,48 @@ object RequestsGenerator {
 
   val logger = Logging(system, getClass)
 
-  def activate(tickInterval: FiniteDuration, endpoints: Vector[String], interface: String = "localhost", port: Int = 8080)(implicit materializer: Materializer, system: ActorSystem): Cancellable = {
-
-    implicit val materializer = ActorMaterializer()
-
-    val timeout = 2 seconds
-
-    val decider: Supervision.Decider = exc ⇒ {
-      logger.error(s"Request Generator Stream failed. It will restart in seconds.", exc)
-      Supervision.Restart
+  var x = 1
+  while(true) {
+    val responses = Vector.newBuilder[Future[HttpResponse]]
+    while(x % 32 != 0) {
+      //println("TRUING" + s"http://localhost:8080/ok/$x")
+      responses += Http(system).singleRequest(HttpRequest(uri = s"http://localhost:8080/ok/$x"))
+      x += 1
     }
 
-    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] = Http().outgoingConnection(interface, port)
-    val tickSource = Source.tick(tickInterval, tickInterval, NotUsed)
+    x += 1
 
-    tickSource
-      .map(_ ⇒ {
-        val httpRequest = HttpRequest(uri = endpoints(Random.nextInt(endpoints.size)))
-        logger.info(s"Request: ${httpRequest.getUri()}")
-        httpRequest
-      })
-      .via(connectionFlow)
-      .to(Sink.foreach { httpResponse ⇒ httpResponse.toStrict(timeout) })
-      .withAttributes(ActorAttributes.supervisionStrategy(decider))
-      .run()
-
+    Await.result(Future.sequence(responses.result()), 60 seconds)
+    //Thread.sleep(10)
+    println("Next Batch")
   }
+
+  system.terminate()
+
+//  def activate(tickInterval: FiniteDuration, endpoints: Vector[String], interface: String = "localhost", port: Int = 8080)(implicit materializer: Materializer, system: ActorSystem): Cancellable = {
+//
+//    implicit val materializer = ActorMaterializer()
+//
+//    val timeout = 2 seconds
+//
+//    val decider: Supervision.Decider = exc ⇒ {
+//      logger.error(s"Request Generator Stream failed. It will restart in seconds.", exc)
+//      Supervision.Restart
+//    }
+//
+//    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] = Http().outgoingConnection(interface, port)
+//    val tickSource = Source.tick(tickInterval, tickInterval, NotUsed)
+//
+//    tickSource
+//      .map(_ ⇒ {
+//        val httpRequest = HttpRequest(uri = endpoints(Random.nextInt(endpoints.size)))
+//        logger.info(s"Request: ${httpRequest.getUri()}")
+//        httpRequest
+//      })
+//      .via(connectionFlow)
+//      .to(Sink.foreach { httpResponse ⇒ httpResponse.toStrict(timeout) })
+//      .withAttributes(ActorAttributes.supervisionStrategy(decider))
+//      .run()
+//
+//  }
 }

@@ -11,5 +11,6 @@
 
   <weaver options="-warn:none">
     <include within="akka.http..*"/>
+    <include within="kamon.akka.http.instrumentation..*"/>
   </weaver>
 </aspectj>

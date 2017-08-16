@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="false" debug="false">
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} | %-5level | [%thread] | %c{0} -> %m%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- To shut up java.lang.ClassNotFoundException: jdk.internal.misc.Unsafe DEBUG message caused by old version of netty. -->
+    <logger name="io.netty.util.internal" level="OFF" />
+
+    <logger name="akka"                level="ERROR" />
+    <logger name="com.datastax.driver" level="INFO"  />
+    <logger name="com.zaxxer.hikari"   level="INFO"  />
+    <logger name="io.netty"            level="INFO"  />
+    <logger name="org.asynchttpclient" level="INFO"  />
+
+    <root level="ERROR">
+        <appender-ref ref="STDOUT" />
+    </root>
+</configuration>

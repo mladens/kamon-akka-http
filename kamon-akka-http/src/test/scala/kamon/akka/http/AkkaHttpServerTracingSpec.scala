@@ -49,13 +49,13 @@ class AkkaHttpServerTracingSpec extends BaseKamonSpec with Matchers {
     Http().outgoingConnection(interface, port)
 
   override protected def beforeAll(): Unit = {
-    Kamon.start()
+    //Kamon.start()
     Await.result(webServer.start(), timeoutStartUpServer)
   }
 
   override protected def afterAll(): Unit = {
     Await.result(webServer.shutdown(), timeoutStartUpServer)
-    Kamon.shutdown()
+    //Kamon.shutdown()
   }
 
   "the Akka Http Server request tracing instrumentation" should {

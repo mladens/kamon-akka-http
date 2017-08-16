@@ -18,18 +18,16 @@ package kamon.testkit
 
 import com.typesafe.config.Config
 import kamon.Kamon
-import kamon.metric.{ Entity, EntitySnapshot, SubscriptionsDispatcher }
-import kamon.trace.TraceContext
-import kamon.util.LazyActorRef
+
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
 
 abstract class BaseKamonSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
-  lazy val collectionContext = Kamon.metrics.buildDefaultCollectionContext
+  lazy val collectionContext = ??? //Kamon.metrics.buildDefaultCollectionContext
 
   def config: Config =
     Kamon.config
 
-  def newContext(name: String): TraceContext =
+  /*def newContext(name: String): TraceContext =
     Kamon.tracer.newContext(name)
 
   def newContext(name: String, token: String): TraceContext =
@@ -55,5 +53,5 @@ abstract class BaseKamonSpec extends WordSpecLike with Matchers with BeforeAndAf
     val subscriptions = subscriptionsField.get(Kamon.metrics).asInstanceOf[LazyActorRef]
 
     subscriptions.tell(SubscriptionsDispatcher.Tick)
-  }
+  }*/
 }

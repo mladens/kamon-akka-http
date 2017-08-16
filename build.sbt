@@ -14,9 +14,9 @@
  * =========================================================================================
  */
 
-val kamonCore        = "io.kamon" %% "kamon-core"            % "0.6.7"
-val kamonAkka        = "io.kamon" %% "kamon-akka-2.4"        % "0.6.7"
-val kamonLogReporter = "io.kamon" %% "kamon-log-reporter"    % "0.6.7"
+val kamonCore        = "io.kamon" %% "kamon-core"            % "1.0.0-RC1-61029e115272b9af3f4460b311d3a2e650c806e3"
+//val kamonAkka        = "io.kamon" %% "kamon-akka-2.4"        % "0.6.7"
+//val kamonLogReporter = "io.kamon" %% "kamon-log-reporter"    % "0.6.7"
 
 val http         = "com.typesafe.akka" %% "akka-http"          % "10.0.1"
 val httpTestKit  = "com.typesafe.akka" %% "akka-http-testkit"  % "10.0.1"
@@ -34,7 +34,7 @@ lazy val kamonAkkaHttp = Project("kamon-akka-http", file("kamon-akka-http"))
     crossScalaVersions := Seq("2.11.8", "2.12.1"),
     testGrouping in Test := singleTestPerJvm((definedTests in Test).value, (javaOptions in Test).value)))
   .settings(libraryDependencies ++=
-    compileScope(http, kamonCore, kamonAkka) ++
+    compileScope(http, kamonCore/*, kamonAkka*/) ++
       testScope(httpTestKit, scalatest, slf4jApi, slf4jnop) ++
       providedScope(aspectJ))
 
@@ -46,7 +46,7 @@ lazy val kamonAkkaHttpPlayground = Project("kamon-akka-http-playground", file("k
   .settings(noPublishing: _*)
   .settings(settingsForPlayground: _*)
   .settings(libraryDependencies ++=
-    compileScope(http, kamonLogReporter) ++
+    compileScope(http, logbackClassic/*, kamonLogReporter*/) ++
     testScope(httpTestKit, scalatest, slf4jApi, slf4jnop) ++
     providedScope(aspectJ))
 

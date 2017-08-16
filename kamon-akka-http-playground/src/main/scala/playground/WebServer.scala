@@ -21,17 +21,20 @@ import akka.event.Logging
 import akka.http.scaladsl._
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorMaterializer
 import com.typesafe.config.ConfigFactory
 import kamon.Kamon
+import kamon.akka.http.instrumentation.FlowWrapper
+import org.slf4j.LoggerFactory
 
 import scala.concurrent.duration._
 import scala.io.StdIn
 
 object WebServer extends App {
 
-  Kamon.start()
+  //Kamon.start()
 
   val config = ConfigFactory.load()
 
@@ -43,12 +46,31 @@ object WebServer extends App {
   implicit val materializer = ActorMaterializer()
 
   val logger = Logging(system, getClass)
+  private val log = LoggerFactory.getLogger("my-logger")
 
   val routes = { // logRequestResult("akka-http-with-kamon") {
     get {
-      path("ok") {
-        complete {
-          "ok"
+      path("ok" / LongNumber) { reqNumber =>
+        extractRequestContext { reqCtx =>
+          println("UNMATCHED: " + reqCtx)
+
+          extractRequest { request =>
+
+
+            val requestPath = request.uri.path.toString()
+            respondWithHeaders(RawHeader.apply("request-path", requestPath)) {
+              complete {
+                //log.error("IN THE CONTROLLER with " + requestPath)
+
+                val contextPath = Kamon.currentContext().get(FlowWrapper.requestPath)
+                if (requestPath != contextPath) {
+                  log.error("Different context in the controller!")
+                }
+
+                requestPath
+              }
+            }
+          }
         }
       } ~
         path("go-to-outside") {
@@ -79,16 +101,16 @@ object WebServer extends App {
 
     StdIn.readLine()
 
-    logger.info(s"Server is shutting down.")
+    //logger.info(s"Server is shutting down.")
 
     //matGraph.cancel()
 
-    serverBinding
-      .unbind() // trigger unbinding from the port
-      .flatMap(_ ⇒ {
-        Kamon.shutdown()
-        system.terminate()
-      }) // and shutdown when done
+//    serverBinding
+//      .unbind() // trigger unbinding from the port
+//      .flatMap(_ ⇒ {
+//        //Kamon.shutdown()
+//        system.terminate()
+//      }) // and shutdown when done
   }
 
 }
