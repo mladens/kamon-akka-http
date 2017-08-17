@@ -1,6 +1,7 @@
 package kamon.akka
 
 import akka.actor.ActorSystem
+import akka.http.javadsl.server.RejectionHandler
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Directives
 import akka.stream.ActorMaterializer
@@ -11,9 +12,11 @@ object ExampleServer extends App with Directives with KamonDirectives {
   implicit val materializer = ActorMaterializer()
 
   val route = trace {
-    get {
-      path("test") {
-        complete("ok")
+    handleRejections(RejectionHandler.defaultHandler.asScala) {
+      get {
+        path("test") {
+          complete("ok")
+        }
       }
     }
   }

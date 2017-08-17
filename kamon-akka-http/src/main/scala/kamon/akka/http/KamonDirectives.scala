@@ -1,6 +1,6 @@
 package kamon.akka.http
 
-import akka.http.scaladsl.model.{HttpHeader, HttpRequest}
+import akka.http.scaladsl.model.{HttpHeader, HttpRequest, StatusCode, StatusCodes}
 import akka.http.scaladsl.server.{Directive, RouteResult}
 import kamon.Kamon
 import kamon.context.{Context, TextMap}
@@ -30,10 +30,13 @@ trait KamonDirectives {
           res match {
             case Success(routeResult) => routeResult match {
               case RouteResult.Complete(httpResponse) =>
+                if(httpResponse.status == StatusCodes.NotFound)
+                  serverSpan.setOperationName("not-found")
+
                 if (httpResponse.status.isFailure())
                   serverSpan.addSpanTag("error", true)
 
-              case RouteResult.Rejected(rejections) =>
+              case RouteResult.Rejected(_) =>
                 serverSpan.addSpanTag("error", true)
             }
 
@@ -42,6 +45,8 @@ trait KamonDirectives {
                 .addSpanTag("error", true)
                 .addSpanTag("error.object", throwable.getMessage)
           }
+
+          println("RESPONSE " + res)
 
           serverSpan.finish()
         })(CallingThreadExecutionContext)
