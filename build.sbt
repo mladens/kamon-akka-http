@@ -14,7 +14,7 @@
  * =========================================================================================
  */
 
-val kamonCore        = "io.kamon" %% "kamon-core"            % "1.0.0-RC1-61029e115272b9af3f4460b311d3a2e650c806e3"
+val kamonCore        = "io.kamon" %% "kamon-core"            % "1.0.0-RC1-5e0b768f139fc2c5e75d6b5060bd4d0aa48092b0"
 //val kamonAkka        = "io.kamon" %% "kamon-akka-2.4"        % "0.6.7"
 //val kamonLogReporter = "io.kamon" %% "kamon-log-reporter"    % "0.6.7"
 
