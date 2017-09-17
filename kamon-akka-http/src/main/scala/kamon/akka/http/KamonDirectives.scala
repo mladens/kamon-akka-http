@@ -30,13 +30,11 @@ trait KamonDirectives {
           res match {
             case Success(routeResult) => routeResult match {
               case RouteResult.Complete(httpResponse) =>
-                if(httpResponse.status == StatusCodes.NotFound)
-                  serverSpan.setOperationName("not-found")
-
                 if (httpResponse.status.isFailure())
                   serverSpan.addSpanTag("error", true)
 
               case RouteResult.Rejected(_) =>
+                serverSpan.setOperationName("not-found")
                 serverSpan.addSpanTag("error", true)
             }
 
