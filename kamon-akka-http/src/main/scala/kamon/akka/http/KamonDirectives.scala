@@ -20,8 +20,8 @@ trait KamonDirectives {
       val serverSpan = Kamon.buildSpan(requestContext.request.uri.path.toString)
         .asChildOf(incomingContext.get(Span.ContextKey))
         .withTag("span.kind", "server")
-        .withSpanTag("http.method", requestContext.request.method.value)
-        .withSpanTag("http.url", requestContext.request.uri.toString())
+        .withTag("http.method", requestContext.request.method.value)
+        .withTag("http.url", requestContext.request.uri.toString())
         .start()
 
       Kamon.withContext(incomingContext.withKey(Span.ContextKey, serverSpan)) {
@@ -31,17 +31,17 @@ trait KamonDirectives {
             case Success(routeResult) => routeResult match {
               case RouteResult.Complete(httpResponse) =>
                 if (httpResponse.status.isFailure())
-                  serverSpan.addSpanTag("error", true)
+                  serverSpan.addTag("error", true)
 
               case RouteResult.Rejected(_) =>
                 serverSpan.setOperationName("not-found")
-                serverSpan.addSpanTag("error", true)
+                serverSpan.addTag("error", true)
             }
 
             case Failure(throwable) =>
               serverSpan
-                .addSpanTag("error", true)
-                .addSpanTag("error.object", throwable.getMessage)
+                .addTag("error", true)
+                .addTag("error.object", throwable.getMessage)
           }
 
           println("RESPONSE " + res)
