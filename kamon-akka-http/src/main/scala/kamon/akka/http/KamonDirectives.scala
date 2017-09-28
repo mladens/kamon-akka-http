@@ -20,8 +20,8 @@ trait KamonDirectives {
       val serverSpan = Kamon.buildSpan(requestContext.request.uri.path.toString)
         .asChildOf(incomingContext.get(Span.ContextKey))
         .withMetricTag("span.kind", "server")
-        .withMetricTag("http.method", requestContext.request.method.value)
-        .withMetricTag("http.url", requestContext.request.uri.toString())
+        .withTag("http.method", requestContext.request.method.value)
+        .withTag("http.url", requestContext.request.uri.toString())
         .start()
 
       Kamon.withContext(incomingContext.withKey(Span.ContextKey, serverSpan)) {
