@@ -31,17 +31,16 @@ trait KamonDirectives {
             case Success(routeResult) => routeResult match {
               case RouteResult.Complete(httpResponse) =>
                 if (httpResponse.status.isFailure())
-                  serverSpan.addMetricTag("error", true.toString)
+                  serverSpan.addError("request-failed")
 
               case RouteResult.Rejected(_) =>
                 serverSpan.setOperationName("not-found")
-                serverSpan.addMetricTag("error", true.toString)
+                serverSpan.addError("rejected")
             }
 
             case Failure(throwable) =>
               serverSpan
-                .addMetricTag("error", true.toString)
-                .addMetricTag("error.object", throwable.getMessage)
+                .addError(throwable.getMessage, throwable)
           }
 
           println("RESPONSE " + res)
