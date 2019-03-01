@@ -17,19 +17,20 @@
 package kamon.akka.http.instrumentation
 
 import scala.collection.immutable.TreeMap
-
 import akka.NotUsed
 import akka.http.scaladsl.model.headers.RawHeader
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
+import akka.http.scaladsl.model.{HttpHeader, HttpRequest, HttpResponse}
 import akka.stream._
 import akka.stream.scaladsl.{BidiFlow, Flow, Keep}
 import akka.stream.stage._
 import akka.util.ByteString
 import kamon.Kamon
 import kamon.akka.http.{AkkaHttp, AkkaHttpMetrics}
-import kamon.context.{TextMap, Context => KamonContext}
+import kamon.context.HttpPropagation.{HeaderReader, HeaderWriter}
+import kamon.context.{Context => KamonContext}
 import kamon.trace.Span
 
+import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success}
 
 /**
@@ -149,17 +150,15 @@ object ServerFlowWrapper {
   def apply(flow: Flow[HttpRequest, HttpResponse, NotUsed], iface: String, port: Int): Flow[HttpRequest, HttpResponse, NotUsed] =
     BidiFlow.fromGraph(wrap(iface, port)).join(flow)
 
-  private def includeTraceToken(response: HttpResponse, context: KamonContext): HttpResponse = response.withHeaders(
-      response.headers ++ Kamon.contextCodec().HttpHeaders.encode(context).values.map(k => RawHeader(k._1, k._2))
-    )
+  private def includeTraceToken(response: HttpResponse, context: KamonContext): HttpResponse = {
+    val contextHeaders = ListBuffer.empty[HttpHeader]
+    val headerWriter = new HeaderWriter {
+      override def write(header: String, value: String): Unit = contextHeaders.append(RawHeader(header, value))
+    }
+    Kamon.defaultHttpPropagation().write(context, headerWriter)
+    response.withHeaders(response.headers ++ contextHeaders)
+  }
 
-  private def extractContext(request: HttpRequest) = Kamon.contextCodec().HttpHeaders.decode(new TextMap {
-    private val headersKeyValueMap =
-      new TreeMap[String, String]()(Ordering.comparatorToOrdering(String.CASE_INSENSITIVE_ORDER)) ++
-        request.headers.map(h => h.name -> h.value())
-    override def values: Iterator[(String, String)] = headersKeyValueMap.iterator
-    override def get(key: String): Option[String] = headersKeyValueMap.get(key)
-    override def put(key: String, value: String): Unit = {}
-  })
+  private def extractContext(request: HttpRequest): KamonContext = AkkaHttp.decodeContext(request.headers)
 }
 

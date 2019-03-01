@@ -28,10 +28,10 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import kamon.Kamon
 import kamon.akka.http.TracingDirectives
-import kamon.context.Key
+import kamon.context.Context
 import org.json4s.{DefaultFormats, native}
-import scala.concurrent.duration._
 
+import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Random
 
@@ -79,7 +79,7 @@ trait TestWebServer extends TracingDirectives {
         path(basicContext) {
           complete {
             Map(
-              "custom-string-key" -> Kamon.currentContext().get(Key.broadcastString("custom-string-key")),
+              "custom-string-key" -> Kamon.currentContext().getTag("custom-string-key"),
               "trace-id" -> Kamon.currentSpan().context().traceID.string
             )
           }

@@ -17,8 +17,8 @@
 resolvers += Resolver.bintrayRepo("hseeberger", "maven")
 
 val kamonTestKit        = "io.kamon" %% "kamon-testkit"         % "1.0.0"
-val kamonAkka24         = "io.kamon" %% "kamon-akka-2.4"        % "1.0.0"
-val kamonAkka25         = "io.kamon" %% "kamon-akka-2.5"        % "1.0.0"
+val kamonAkka24         = "io.kamon" %% "kamon-akka-2.4"        % "1.1.4-9a47ea6e1dddb42963aa9387bbe9f2ca8b8bfd75"
+val kamonAkka25         = "io.kamon" %% "kamon-akka-2.5"        % "1.1.4-9a47ea6e1dddb42963aa9387bbe9f2ca8b8bfd75"
 val akkaHttpJson        = "de.heikoseeberger" %% "akka-http-json4s" % "1.18.1"
 val json4sNative        = "org.json4s" %% "json4s-native" % "3.5.3"
 
@@ -31,7 +31,6 @@ val stream25       = "com.typesafe.akka" %% "akka-stream"        % "2.5.8"
 val httpTestKit25  = "com.typesafe.akka" %% "akka-http-testkit"  % "10.0.11"
 
 val kanelaScalaExtension  = "io.kamon"  %%  "kanela-scala-extension"  % "0.0.10"
-
 
 lazy val baseSettings = Seq(
   scalaSource in Compile := baseDirectory.value / ".." / ".." / "kamon-akka-http"/ "src" / "main" / "scala",
@@ -48,6 +47,8 @@ lazy val root = (project in file("."))
   .aggregate(kamonAkkaHttp24, kamonAkkaHttp25, kamonAkkaHttpPlayground)
   .settings(noPublishing: _*)
   .settings(Seq(crossScalaVersions := Seq("2.11.8", "2.12.1")))
+  .settings(scalacOptions += "-target:jvm-1.8")
+
 
 lazy val kamonAkkaHttp24 = Project("kamon-akka-http-24", file("target/kamon-akka-http-24"))
   .settings(name := "kamon-akka-http-24", moduleName := "kamon-akka-http-2.4", bintrayPackage := "kamon-akka-http")

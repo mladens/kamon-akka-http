@@ -19,10 +19,10 @@ package kamon.akka.http
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.headers.RawHeader
-import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.model.{HttpHeader, HttpRequest}
 import akka.stream.ActorMaterializer
 import kamon.Kamon
-import kamon.context.{Key, TextMap}
+import kamon.context.Context
 import kamon.testkit._
 import kamon.trace.{Span, SpanCustomizer}
 import kamon.trace.Span.TagValue
@@ -49,6 +49,7 @@ class AkkaHttpClientTracingSpec extends WordSpecLike with Matchers with BeforeAn
   val webServer = startServer(interface, port)
 
   "the Akka HTTP client instrumentation" should {
+
     "create a client Span when using the request level API - Http().singleRequest(...)" in {
       val target = s"http://$interface:$port/$dummyPathOk"
       Http().singleRequest(HttpRequest(uri = target)).map(_.discardEntityBytes())
@@ -85,18 +86,23 @@ class AkkaHttpClientTracingSpec extends WordSpecLike with Matchers with BeforeAn
 
     "serialize the current context into HTTP Headers" in {
       val target = s"http://$interface:$port/$replyWithHeaders"
-      val broadcastKey = Key.broadcastString("custom-string-key")
-      val broadcastValue = Some("Hello World :D")
+      val tagKey = "custom-string-key"
+      val tagValue = "Hello World :D"
 
-      val response = Kamon.withContextKey(broadcastKey, broadcastValue) {
+      val response = Kamon.withContext(Context.Empty.withTag(tagKey, tagValue)) {
         Http().singleRequest(HttpRequest(uri = target, headers = List(RawHeader("X-Foo", "bar"))))
       }.flatMap(r => r.entity.toStrict(timeoutTest))
 
       eventually(timeout(10 seconds)) {
         val httpResponse = response.value.value.get
-        val headersMap = parse(httpResponse.data.utf8String).extract[Map[String, String]]
-        Kamon.contextCodec().HttpHeaders.decode(textMap(headersMap)).get(broadcastKey) shouldBe broadcastValue
-        headersMap.keys.toList should contain allOf(
+
+        val headers: Seq[HttpHeader] = parse(httpResponse.data.utf8String)
+          .extract[Map[String, String]]
+          .toSeq.map { case (k, v) => RawHeader(k, v) }
+        val decodedContext = AkkaHttp.decodeContext(headers)
+
+        decodedContext.getTag(tagKey) shouldBe Some(tagValue)
+        headers.map(_.name()) should contain allOf(
           "X-Foo",
           "X-B3-TraceId",
           "X-B3-SpanId",
@@ -127,12 +133,6 @@ class AkkaHttpClientTracingSpec extends WordSpecLike with Matchers with BeforeAn
 
     def stringTag(span: Span.FinishedSpan)(tag: String): String = {
       span.tags(tag).asInstanceOf[TagValue.String].string
-    }
-
-    def textMap(map: Map[String, String]): TextMap = new TextMap {
-      override def values: Iterator[(String, String)] = map.iterator
-      override def put(key: String, value: String): Unit = {}
-      override def get(key: String): Option[String] = map.get(key)
     }
   }
 

@@ -17,10 +17,17 @@
 package kamon.akka.http
 
 import akka.actor.ReflectiveDynamicAccess
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
-import akka.http.scaladsl.model.headers.Host
+import akka.http.scaladsl.model.{HttpHeader, HttpRequest, HttpResponse}
+import akka.http.scaladsl.model.headers.{Host, RawHeader}
 import com.typesafe.config.Config
-import kamon.{Kamon, OnReconfigureHook}
+import kamon.Configuration.OnReconfigureHook
+import kamon.Kamon
+import kamon.context.Context
+import kamon.context.HttpPropagation.{HeaderReader, HeaderWriter}
+import kamon.instrumentation.Mixin.HasContext
+
+import scala.collection.immutable.TreeMap
+import scala.collection.mutable.ListBuffer
 
 
 object AkkaHttp {
@@ -84,4 +91,27 @@ object AkkaHttp {
       defaultNotFoundOperationName = defaultNotFoundOperationNameFromConfig(newConfig)
     }
   })
+
+
+  def encodeContext(context: Context): List[HttpHeader] = {
+    val contextHeaders = ListBuffer.empty[HttpHeader]
+    val headerWriter = new HeaderWriter {
+      override def write(header: String, value: String): Unit = contextHeaders.append(RawHeader(header, value))
+    }
+
+    Kamon.defaultHttpPropagation().write(context, headerWriter)
+    contextHeaders.toList
+  }
+
+  def decodeContext(headers: Seq[HttpHeader]): Context = {
+    val headerReader: HeaderReader = new HeaderReader {
+      private val headersKeyValueMap =
+        new TreeMap[String, String]()(Ordering.comparatorToOrdering(String.CASE_INSENSITIVE_ORDER)) ++
+          headers.map(h => h.name -> h.value())
+
+      override def read(header: String): Option[String] = headersKeyValueMap.get(header)
+      override def readAll(): Map[String, String] = headersKeyValueMap
+    }
+    Kamon.defaultHttpPropagation().read(headerReader)
+  }
 }
